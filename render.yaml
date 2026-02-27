@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: identity-reconciliation
+    runtime: java
+    buildCommand: mvn clean install -DskipTests
+    startCommand: java -jar target/*.jar
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false

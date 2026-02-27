@@ -66,5 +66,34 @@ public class ContactService {
                 .stream()
                 .min(Comparator.comparing(Contact::getCreatedAt))
                 .orElseThrow();
+
+        Set<Contact> otherPrimaries = new HashSet<>(primaryCandidates);
+        otherPrimaries.remove(finalPrimary);
+
+        List<Contact> contactsToUpdate = new ArrayList<>();
+
+        for(Contact primary : otherPrimaries) {
+            List<Contact> secondaries = contactRepository.findByLinkedId(primary.getId());
+
+            for(Contact secondary : secondaries) {
+                secondary.setLinkedId(finalPrimary.getId());
+                contactsToUpdate.add(secondary);
+            }
+
+            primary.setLinkPrecedence(LinkPrecedence.SECONDARY);
+            primary.setLinkedId(finalPrimary.getId());
+            contactsToUpdate.add(primary);
+        }
+
+        if(!contactsToUpdate.isEmpty()) {
+            contactRepository.saveAll(contactsToUpdate);
+        }
+
+        List<Contact> clusterSecondaries = contactRepository.findByLinkedId(finalPrimary.getId());
+
+        List<Contact> fullCluster = new ArrayList<>();
+        fullCluster.add(finalPrimary);
+        fullCluster.addAll(clusterSecondaries);
+
     }
 }

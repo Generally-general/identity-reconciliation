@@ -13,12 +13,12 @@ import java.time.LocalDateTime;
 public class Contact {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     private String phoneNumber;
     private String email;
 
-    private Integer linkedId;
+    private Long linkedId;
 
     @Enumerated(EnumType.STRING)
     private LinkPrecedence linkPrecedence;

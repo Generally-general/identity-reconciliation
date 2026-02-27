@@ -4,6 +4,7 @@ import com.bitespeed.identity.utils.LinkPrecedence;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -15,7 +16,9 @@ public class Contact {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = true)
     private String phoneNumber;
+    @Column(nullable = true)
     private String email;
 
     private Long linkedId;
@@ -26,9 +29,8 @@ public class Contact {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @CreationTimestamp
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    @CreationTimestamp
     private LocalDateTime deletedAt;
 }

@@ -95,5 +95,34 @@ public class ContactService {
         fullCluster.add(finalPrimary);
         fullCluster.addAll(clusterSecondaries);
 
+        Set<String> existingEmails = new HashSet<>();
+        Set<String> existingPhones = new HashSet<>();
+
+        for(Contact contact : fullCluster) {
+            if(contact.getEmail() != null) {
+                existingEmails.add(contact.getEmail());
+            }
+            if(contact.getPhoneNumber() != null) {
+                existingPhones.add(contact.getPhoneNumber());
+            }
+        }
+
+        boolean isNewEmail = request.getEmail() != null
+                && !existingEmails.contains(request.getEmail());
+        boolean isNewPhone = request.getPhoneNumber() != null
+                && !existingPhones.contains(request.getPhoneNumber());
+
+        if(isNewEmail || isNewPhone) {
+            Contact newSecondary = new Contact();
+
+            newSecondary.setEmail(request.getEmail());
+            newSecondary.setPhoneNumber(request.getPhoneNumber());
+            newSecondary.setLinkPrecedence(LinkPrecedence.SECONDARY);
+            newSecondary.setLinkedId(finalPrimary.getId());
+
+            Contact savedSecondary = contactRepository.save(newSecondary);
+
+            fullCluster.add(savedSecondary);
+        }
     }
 }

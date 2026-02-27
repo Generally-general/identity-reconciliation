@@ -16,6 +16,6 @@ public class IdentityResponse {
         private Long primaryContatctId;
         private List<String> emails;
         private List<String> phoneNumbers;
-        private List<Integer> secondaryContactIds;
+        private List<Long> secondaryContactIds;
     }
 }

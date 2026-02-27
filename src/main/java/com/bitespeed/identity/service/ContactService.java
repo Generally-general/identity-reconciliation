@@ -67,38 +67,37 @@ public class ContactService {
                 .min(Comparator.comparing(Contact::getCreatedAt))
                 .orElseThrow();
 
-        Set<Contact> otherPrimaries = new HashSet<>(primaryCandidates);
-        otherPrimaries.remove(finalPrimary);
 
         List<Contact> contactsToUpdate = new ArrayList<>();
 
-        for(Contact primary : otherPrimaries) {
-            List<Contact> secondaries = contactRepository.findByLinkedId(primary.getId());
+        for(Contact primary : primaryCandidates) {
+            if(!primary.getId().equals(finalPrimary.getId())) {
+                List<Contact> secondaries = contactRepository.findByLinkedId(primary.getId());
 
-            for(Contact secondary : secondaries) {
-                secondary.setLinkedId(finalPrimary.getId());
-                contactsToUpdate.add(secondary);
+                for (Contact secondary : secondaries) {
+                    secondary.setLinkedId(finalPrimary.getId());
+                    contactsToUpdate.add(secondary);
+                }
+
+                primary.setLinkPrecedence(LinkPrecedence.SECONDARY);
+                primary.setLinkedId(finalPrimary.getId());
+                contactsToUpdate.add(primary);
             }
-
-            primary.setLinkPrecedence(LinkPrecedence.SECONDARY);
-            primary.setLinkedId(finalPrimary.getId());
-            contactsToUpdate.add(primary);
         }
 
         if(!contactsToUpdate.isEmpty()) {
             contactRepository.saveAll(contactsToUpdate);
         }
 
-        List<Contact> clusterSecondaries = contactRepository.findByLinkedId(finalPrimary.getId());
-
-        List<Contact> fullCluster = new ArrayList<>();
-        fullCluster.add(finalPrimary);
-        fullCluster.addAll(clusterSecondaries);
+        List<Contact> cluster = contactRepository.findByLinkedId(finalPrimary.getId());
 
         Set<String> existingEmails = new HashSet<>();
         Set<String> existingPhones = new HashSet<>();
 
-        for(Contact contact : fullCluster) {
+        existingEmails.add(finalPrimary.getEmail());
+        existingPhones.add(finalPrimary.getPhoneNumber());
+
+        for(Contact contact : cluster) {
             if(contact.getEmail() != null) {
                 existingEmails.add(contact.getEmail());
             }
@@ -120,9 +119,47 @@ public class ContactService {
             newSecondary.setLinkPrecedence(LinkPrecedence.SECONDARY);
             newSecondary.setLinkedId(finalPrimary.getId());
 
-            Contact savedSecondary = contactRepository.save(newSecondary);
-
-            fullCluster.add(savedSecondary);
+            contactRepository.save(newSecondary);
         }
+
+        List<Contact> finalSecondaries =
+                contactRepository.findByLinkedId(finalPrimary.getId());
+
+        LinkedHashSet<String> emails = new LinkedHashSet<>();
+        LinkedHashSet<String> phones = new LinkedHashSet<>();
+
+        if(finalPrimary.getEmail() != null) {
+            emails.add(finalPrimary.getEmail());
+        }
+
+        if(finalPrimary.getPhoneNumber() != null) {
+            phones.add(finalPrimary.getPhoneNumber());
+        }
+
+        for(Contact contact : finalSecondaries) {
+            if(!contact.getId().equals(finalPrimary.getId()) && contact.getEmail() != null) {
+                emails.add(contact.getEmail());
+            }
+            if(!contact.getId().equals(finalPrimary.getId()) && contact.getPhoneNumber() != null) {
+                phones.add(contact.getPhoneNumber());
+            }
+        }
+
+        List<Long> secondaryIds = finalSecondaries
+                .stream()
+                .map(Contact::getId)
+                .toList();
+
+        IdentityResponse.ContactDetails details =
+                IdentityResponse.ContactDetails.builder()
+                        .primaryContatctId(finalPrimary.getId())
+                        .emails(new ArrayList<>(emails))
+                        .phoneNumbers(new ArrayList<>(phones))
+                        .secondaryContactIds(secondaryIds)
+                        .build();
+
+        return IdentityResponse.builder()
+                .contact(details)
+                .build();
     }
 }
